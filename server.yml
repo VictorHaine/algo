@@ -15,11 +15,11 @@
     - role: dns_adblocking
       when: algo_local_dns
       tags: dns_adblocking
+    - role: vpn
+      tags: vpn
     - role: ssh_tunneling
       when: algo_ssh_tunneling
       tags: ssh_tunneling
-    - role: vpn
-      tags: vpn
 
   post_tasks:
     - block:

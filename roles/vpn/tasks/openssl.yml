@@ -16,12 +16,14 @@
       dest: "configs/{{ IP_subject_alt_name }}/pki/{{ item }}"
       state: directory
       recurse: yes
+      mode: '0700'
     with_items:
       - ecparams
       - certs
       - crl
       - newcerts
       - private
+      - public
       - reqs
 
   - name: Ensure the files exist
@@ -42,6 +44,7 @@
 
   - name: Build the CA pair
     shell: >
+      umask 077;
       {{ openssl_bin }} ecparam -name secp384r1 -out ecparams/secp384r1.pem &&
       {{ openssl_bin }} req -utf8 -new
       -newkey ec:ecparams/secp384r1.pem
@@ -70,6 +73,7 @@
 
   - name: Build the server pair
     shell: >
+      umask 077;
       {{ openssl_bin }} req -utf8 -new
       -newkey ec:ecparams/secp384r1.pem
       -config <(cat openssl.cnf <(printf "[basic_exts]\nsubjectAltName={{ subjectAltName }}"))
@@ -92,6 +96,7 @@
 
   - name: Build the client's pair
     shell: >
+      umask 077;
       {{ openssl_bin }} req -utf8 -new
       -newkey ec:ecparams/secp384r1.pem
       -config <(cat openssl.cnf <(printf "[basic_exts]\nsubjectAltName=DNS:{{ item }}"))
@@ -113,8 +118,25 @@
       executable: bash
     with_items: "{{ users }}"
 
+  - name: Create links for the private keys
+    file:
+      src: "pki/private/{{ item }}.key"
+      dest: "configs/{{ IP_subject_alt_name }}/{{ item }}.ssh.pem"
+      state: link
+      force: true
+      mode: '0600'
+    with_items: "{{ users }}"
+
+  - name: Build openssh public keys
+    openssl_publickey:
+      path:  "configs/{{ IP_subject_alt_name }}/pki/public/{{ item }}.pub"
+      privatekey_path: "configs/{{ IP_subject_alt_name }}/pki/private/{{ item }}.key"
+      format: OpenSSH
+    with_items: "{{ users }}"
+
   - name: Build the client's p12
     shell: >
+      umask 077;
       {{ openssl_bin }} pkcs12
       -in certs/{{ item }}.crt
       -inkey private/{{ item }}.key

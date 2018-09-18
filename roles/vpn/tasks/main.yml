@@ -6,12 +6,6 @@
       tags: wireguard
       when: wireguard_enabled and ansible_distribution == 'Ubuntu'
 
-    - name: Ensure that the strongswan group exist
-      group: name=strongswan state=present
-
-    - name: Ensure that the strongswan user exist
-      user: name=strongswan group=strongswan state=present
-
     - include_tasks: ubuntu.yml
       when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
